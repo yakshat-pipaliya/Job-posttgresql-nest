@@ -11,12 +11,20 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
 
-  const config = new DocumentBuilder()
-    .setTitle('Job Portal API')
-    .setDescription('API documentation for Job Portal ')
+   const config = new DocumentBuilder()
+    .setTitle('Student Portal API')
+    .setDescription('API documentation for Student Portal application')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      },
+      'access-token',
+    )
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {
@@ -24,10 +32,11 @@ async function bootstrap() {
     },
   });
 
+
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
 
-  await app.listen(3000);
+  await app.listen(9898);
 }
 bootstrap();

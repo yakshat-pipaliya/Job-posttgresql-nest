@@ -11,7 +11,6 @@ export class JobApplication {
 
     @Column({ nullable: false })
     @IsNotEmpty()
-    @ApiProperty({ example: 1, description: 'ID of the user applying for the job' })
     userId: number;
 
     @ManyToOne(() => User)
@@ -20,7 +19,6 @@ export class JobApplication {
 
     @Column({ nullable: false })
     @IsNotEmpty()
-    @ApiProperty({ example: 2, description: 'ID of the job listing' })
     jobListingId: number;
 
     @ManyToOne(() => JobListing)
@@ -29,7 +27,6 @@ export class JobApplication {
 
     @Column({ nullable: false })
     @IsNotEmpty()
-    @ApiProperty({ example: 'resume-123456789.pdf', description: 'Uploaded resume file name' })
     resume: string;
 
     @CreateDateColumn()

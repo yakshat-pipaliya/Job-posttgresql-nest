@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { JobListing } from './entities/job-listing.entity';
 import { CreateJobListingDto } from './dto/create-job-listing.dto';
 import { UpdateJobListingDto } from './dto/update-job-listing.dto';
+import { messages } from '../common/message';
 
 @Injectable()
 export class JobListingService {
@@ -12,45 +13,48 @@ export class JobListingService {
     private readonly jobListingRepository: Repository<JobListing>,
   ) { }
 
-  async create(createJobListingDto: CreateJobListingDto): Promise<JobListing> {
+  async create(createJobListingDto: CreateJobListingDto): Promise<{ message: string; jobListing: JobListing }> {
     const jobListing = this.jobListingRepository.create(createJobListingDto);
-    return await this.jobListingRepository.save(jobListing);
+    const savedJobListing = await this.jobListingRepository.save(jobListing);
+    return { message: messages.jobListingCreated, jobListing: savedJobListing };
   }
 
-  async findAll(): Promise<JobListing[]> {
-    return await this.jobListingRepository.find({
+  async findAll(): Promise<{ message: string; jobListings: JobListing[] }> {
+    const jobListings = await this.jobListingRepository.find({
       relations: ['company'],
     });
+    return { message: messages.jobListingListReturned, jobListings };
   }
 
-  async findOne(id: number): Promise<JobListing> {
+  async findOne(id: number): Promise<{ message: string; jobListing: JobListing }> {
     const jobListing = await this.jobListingRepository.findOne({
       where: { id },
       relations: ['company'],
     });
     if (!jobListing) {
-      throw new NotFoundException(`JobListing with id ${id} not found`);
+      throw new NotFoundException(messages.jobListingNotFoundWithId.replace('{id}', id.toString()));
     }
-    return jobListing;
+    return { message: messages.jobListingFound, jobListing };
   }
 
-  async update(id: number, updateJobListingDto: UpdateJobListingDto): Promise<JobListing> {
+  async update(id: number, updateJobListingDto: UpdateJobListingDto): Promise<{ message: string; jobListing: JobListing }> {
     const jobListing = await this.jobListingRepository.preload({
       id,
       ...updateJobListingDto,
     });
     if (!jobListing) {
-      throw new NotFoundException(`JobListing with id ${id} not found`);
+      throw new NotFoundException(messages.jobListingNotFoundWithId.replace('{id}', id.toString()));
     }
-    return this.jobListingRepository.save(jobListing);
+    const updatedJobListing = await this.jobListingRepository.save(jobListing);
+    return { message: messages.jobListingUpdated, jobListing: updatedJobListing };
   }
 
-  async remove(id: number): Promise<JobListing> {
+  async remove(id: number): Promise<{ message: string; jobListing: JobListing }> {
     const jobListing = await this.jobListingRepository.findOne({ where: { id } });
     if (!jobListing) {
-      throw new NotFoundException(`jobListing id ${id} not found`);
+      throw new NotFoundException(messages.jobListingNotFoundWithId.replace('{id}', id.toString()));
     }
     await this.jobListingRepository.remove(jobListing);
-    return jobListing;
+    return { message: messages.jobListingDeletedWithId.replace('{id}', id.toString()), jobListing };
   }
 }

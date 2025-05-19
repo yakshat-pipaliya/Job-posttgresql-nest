@@ -1,6 +1,7 @@
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { messages } from '../common/message';
 
 const uploadDir = '/var/www/html/resume';
 if (!existsSync(uploadDir)) {
@@ -21,7 +22,7 @@ export const multerConfig = {
     }),
     fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|pdf)$/)) {
-            return callback(new Error('Only image files are allowed!'), false);
+            return callback(new Error(messages.onlyImageFilesAllowed), false);
         }
         callback(null, true);
     },

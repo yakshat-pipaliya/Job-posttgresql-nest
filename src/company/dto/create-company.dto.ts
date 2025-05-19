@@ -1,23 +1,24 @@
 import { IsNotEmpty, IsString, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { createCompanyDtoExamples, createCompanyDtoDescriptions } from '../../common/message';
 
 export class CreateCompanyDto {
-    @ApiProperty({ example: 'Acme Corp', description: 'Name of the company' })
+    @ApiProperty({ example: createCompanyDtoExamples.CompanyName, description: createCompanyDtoDescriptions.CompanyName })
     @IsNotEmpty()
     @IsString()
     CompanyName: string;
 
-    @ApiProperty({ example: 'contact@acme.com', description: 'Contact email of the company' })
+    @ApiProperty({ example: createCompanyDtoExamples.Email, description: createCompanyDtoDescriptions.Email })
     @IsNotEmpty()
     @IsEmail()
     Email: string;
 
-    @ApiProperty({ example: '+1234567890', description: 'Contact phone number' })
+    @ApiProperty({ example: createCompanyDtoExamples.ContactNo, description: createCompanyDtoDescriptions.ContactNo })
     @IsNotEmpty()
     @IsString()
     ContactNo: string;
 
-    @ApiProperty({ example: 'New York', description: 'Location of the company' })
+    @ApiProperty({ example: createCompanyDtoExamples.Location, description: createCompanyDtoDescriptions.Location })
     @IsNotEmpty()
     @IsString()
     Location: string;

@@ -1,22 +1,24 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { createJobApplicationDtoExamples, createJobApplicationDtoDescriptions } from '../../common/message';
 
 export class CreateJobApplicationDto {
-  @ApiProperty({ example: 1, description: 'ID of the user applying for the job' })
+  @ApiProperty({ example: createJobApplicationDtoExamples.userId, description: createJobApplicationDtoDescriptions.userId })
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
   userId: number;
 
-  @ApiProperty({ example: 2, description: 'ID of the job listing' })
+  @ApiProperty({ example: createJobApplicationDtoExamples.jobListingId, description: createJobApplicationDtoDescriptions.jobListingId })
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
   jobListingId: number;
 
   @ApiProperty({
-    example: { example: 'resume-123456789.pdf', description: 'Uploaded resume file name' },
+    example: createJobApplicationDtoExamples.resume,
+    description: createJobApplicationDtoDescriptions.resume,
     type: String,
     format: 'binary',
   })

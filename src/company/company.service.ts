@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './entities/company.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { messages } from '../common/message';
 
 @Injectable()
 export class CompanyService {
@@ -12,48 +13,70 @@ export class CompanyService {
   constructor(
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
-  ) {}
+  ) { }
 
-  async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
+  async create(createCompanyDto: CreateCompanyDto): Promise<{ message: string; company: Company }> {
     const company = this.companyRepository.create(createCompanyDto);
-    return await this.companyRepository.save(company);
+    try {
+      const savedCompany = await this.companyRepository.save(company);
+      return { message: messages.companyCreated, company: savedCompany };
+    } catch (error) {
+      if ((error as any).code === '23505') {
+        const detail = (error as any).detail as string;
+        if (detail.includes('Email')) {
+          throw new BadRequestException(messages.emailAlreadyExists);
+        } else if (detail.includes('ContactNo')) {
+          throw new BadRequestException(messages.phoneAlreadyExists);
+        }
+      }
+      throw new BadRequestException(messages.badRequest);
+    }
   }
 
-  async findAll(): Promise<Company[]> {
-    return await this.companyRepository.find();
+  async findAll(): Promise<{ message: string; companies: Company[] }> {
+    const companies = await this.companyRepository.find();
+    return { message: messages.companyListReturned, companies };
   }
 
-  async findOne(id: number): Promise<Company> {
+  async findOne(id: number): Promise<{ message: string; company: Company }> {
     const company = await this.companyRepository.findOneBy({ id });
     if (!company) {
-      throw new NotFoundException(`Company with id ${id} not found`);
+      throw new NotFoundException(messages.companyNotFound.replace('{id}', id.toString()));
     }
-    return company;
+    return { message: messages.companyFound, company };
   }
 
-  async update(
-    id: number,
-    updateCompanyDto: UpdateCompanyDto,
-  ): Promise<Company> {
+  async update(id: number, updateCompanyDto: UpdateCompanyDto): Promise<{ message: string; company: Company }> {
     const company = await this.companyRepository.preload({
       id,
       ...updateCompanyDto,
     });
     if (!company) {
-      throw new NotFoundException(`Company with id ${id} not found`);
+      throw new NotFoundException(messages.companyNotFoundUpdate.replace('{id}', id.toString()));
     }
-    return this.companyRepository.save(company);
+    try {
+      const updatedCompany = await this.companyRepository.save(company);
+      return { message: messages.companyUpdated, company: updatedCompany };
+    } catch (error) {
+      if ((error as any).code === '23505') {
+        const detail = (error as any).detail as string;
+        if (detail.includes('Email')) {
+          throw new BadRequestException(messages.emailAlreadyExists);
+        } else if (detail.includes('ContactNo')) {
+          throw new BadRequestException(messages.phoneAlreadyExists);
+        }
+      }
+      throw new BadRequestException(messages.badRequest);
+    }
   }
 
   async remove(id: number): Promise<{ message: string }> {
-    this.logger.log(`Attempting to remove company with id: ${id}`);
+    this.logger.log(`Attempting to delete company with ID: ${id}`);
     const company = await this.companyRepository.findOneBy({ id });
-
     if (!company) {
-      throw new NotFoundException(`Company with id ${id} not found`);
+      throw new NotFoundException(messages.companyNotFoundDelete.replace('{id}', id.toString()));
     }
-
     await this.companyRepository.remove(company);
-    return { message: `Company with id ${id} deleted successfully.` };
+    return { message: messages.companyDeletedWithId.replace('{id}', id.toString()) };
   }
 }

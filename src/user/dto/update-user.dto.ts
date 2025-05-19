@@ -1,34 +1,35 @@
 import { IsNotEmpty, IsString, IsEmail, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { messages, updateUserDtoExamples, updateUserDtoDescriptions, UserRole } from '../../common/message';
 
 export class UpdateUserDto {
-    @ApiProperty({ example: 'John Doe', description: 'Full name of the user', nullable: true })
-    @IsNotEmpty()
-    @IsString()
+    @ApiProperty({ example: updateUserDtoExamples.name, description: updateUserDtoDescriptions.name, nullable: true })
+    @IsNotEmpty({ message: messages.nameRequired })
+    @IsString({ message: messages.nameRequired })
     @IsOptional()
     Name: string;
 
-    @ApiProperty({ example: 'john@example.com', description: 'Email address of the user', nullable: true })
-    @IsNotEmpty()
-    @IsEmail()
+    @ApiProperty({ example: updateUserDtoExamples.email, description: updateUserDtoDescriptions.email, nullable: true })
+    @IsNotEmpty({ message: messages.emailRequired })
+    @IsEmail({}, { message: messages.invalidEmail })
     @IsOptional()
     Email: string;
 
-    @ApiProperty({ example: 'strongPassword123', description: 'User password', nullable: true })
-    @IsNotEmpty()
-    @IsString()
+    @ApiProperty({ example: updateUserDtoExamples.password, description: updateUserDtoDescriptions.password, nullable: true })
+    @IsNotEmpty({ message: messages.passwordRequired })
+    @IsString({ message: messages.passwordTooWeak })
     @IsOptional()
     Password: string;
 
-    @ApiProperty({ example: '+9876543210', description: 'User phone number', nullable: true })
-    @IsNotEmpty()
-    @IsString()
+    @ApiProperty({ example: updateUserDtoExamples.phoneNo, description: updateUserDtoDescriptions.phoneNo, nullable: true })
+    @IsNotEmpty({ message: messages.phoneRequired })
+    @IsString({ message: messages.invalidPhone })
     @IsOptional()
     PhoneNo: string;
 
-    @ApiProperty({ example: 'user', description: 'Role of the user', enum: ['user', 'admin'], default: 'user', nullable: true })
-    @IsNotEmpty()
-    @IsString()
+    @ApiProperty({ example: updateUserDtoExamples.role, description: updateUserDtoExamples.role, enum: UserRole, default: UserRole.User })
+    @IsNotEmpty({ message: messages.roleRequired })
+    @IsString({ message: messages.roleRequired })
     @IsOptional()
-    Role: 'user' | 'admin';
+    Role: UserRole;
 }

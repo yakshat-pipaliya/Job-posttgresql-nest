@@ -1,42 +1,43 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateJobListingDto, JobType } from './create-job-listing.dto';
+import { CreateJobListingDto } from './create-job-listing.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import { createJobListingDtoExamples, createJobListingDtoDescriptions, JobType, jobTypeEnumMessage } from '../../common/message';
 
 export class UpdateJobListingDto extends PartialType(CreateJobListingDto) {
-  @ApiPropertyOptional({ example: 1, description: 'ID of the company posting the job' })
+  @ApiPropertyOptional({ example: createJobListingDtoExamples.companyId, description: createJobListingDtoDescriptions.companyId })
   @IsOptional()
   @IsNumber()
   companyId?: number;
 
-  @ApiPropertyOptional({ example: 'Software Engineer', description: 'Title of the job' })
+  @ApiPropertyOptional({ example: createJobListingDtoExamples.title, description: createJobListingDtoDescriptions.title })
   @IsOptional()
   @IsString()
   title?: string;
 
-  @ApiPropertyOptional({ example: 'Develop and maintain software...', description: 'Job description' })
+  @ApiPropertyOptional({ example: createJobListingDtoExamples.description, description: createJobListingDtoDescriptions.description })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: '3+ years experience in Node.js', description: 'Job requirements' })
+  @ApiPropertyOptional({ example: createJobListingDtoExamples.requirements, description: createJobListingDtoDescriptions.requirements })
   @IsOptional()
   @IsString()
   requirements?: string;
 
-  @ApiPropertyOptional({ example: '₹8,00,000 - ₹12,00,000', description: 'Salary range for the job' })
+  @ApiPropertyOptional({ example: createJobListingDtoExamples.salaryRange, description: createJobListingDtoDescriptions.salaryRange })
   @IsOptional()
   @IsString()
   salaryRange?: string;
 
   @ApiPropertyOptional({
-    example: 'FullTime',
+    example: createJobListingDtoExamples.jobType,
     enum: JobType,
-    description: 'Type of job (e.g., FullTime, PartTime, Contract)',
+    description: createJobListingDtoDescriptions.jobType,
   })
   @IsOptional()
   @IsEnum(JobType, {
-    message: `jobType must be one of the following values: ${Object.values(JobType).join(', ')}`,
+    message: jobTypeEnumMessage,
   })
   jobType?: JobType;
 }

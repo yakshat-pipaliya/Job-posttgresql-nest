@@ -1,46 +1,41 @@
 import { IsNotEmpty, IsString, IsNumber, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum JobType {
-  FullTime = 'FullTime',
-  PartTime = 'PartTime',
-  Contract = 'Contract',
-}
+import { createJobListingDtoExamples, createJobListingDtoDescriptions, jobTypeEnumMessage, JobType } from '../../common/message';
 
 export class CreateJobListingDto {
-  @ApiProperty({ example: 1, description: 'ID of the company posting the job' })
+  @ApiProperty({ example: createJobListingDtoExamples.companyId, description: createJobListingDtoDescriptions.companyId })
   @IsNotEmpty()
   @IsNumber()
   companyId: number;
 
-  @ApiProperty({ example: 'Software Engineer', description: 'Title of the job' })
+  @ApiProperty({ example: createJobListingDtoExamples.title, description: createJobListingDtoDescriptions.title })
   @IsNotEmpty()
   @IsString()
   title: string;
 
-  @ApiProperty({ example: 'Develop and maintain software...', description: 'Job description' })
+  @ApiProperty({ example: createJobListingDtoExamples.description, description: createJobListingDtoDescriptions.description })
   @IsNotEmpty()
   @IsString()
   description: string;
 
-  @ApiProperty({ example: '3+ years experience in Node.js', description: 'Job requirements' })
+  @ApiProperty({ example: createJobListingDtoExamples.requirements, description: createJobListingDtoDescriptions.requirements })
   @IsNotEmpty()
   @IsString()
   requirements: string;
 
-  @ApiProperty({ example: '₹8,00,000 - ₹12,00,000', description: 'Salary range for the job' })
+  @ApiProperty({ example: createJobListingDtoExamples.salaryRange, description: createJobListingDtoDescriptions.salaryRange })
   @IsNotEmpty()
   @IsString()
   salaryRange: string;
 
   @ApiProperty({
-    example: 'FullTime',
+    example: createJobListingDtoExamples.jobType,
     enum: JobType,
-    description: 'Type of job (e.g., FullTime, PartTime, Contract)',
+    description: createJobListingDtoDescriptions.jobType,
   })
   @IsNotEmpty()
   @IsEnum(JobType, {
-    message: `jobType must be one of the following values: ${Object.values(JobType).join(', ')}`,
+    message: jobTypeEnumMessage,
   })
   jobType: JobType;
 }

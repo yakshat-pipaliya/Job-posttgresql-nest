@@ -6,6 +6,7 @@ import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { UpdateJobApplicationDto } from './dto/update-job-application.dto';
 import { User } from '../user/entities/user.entity';
 import { JobListing } from '../job-listing/entities/job-listing.entity';
+import { messages } from '../common/message';
 
 @Injectable()
 export class JobApplicationService {
@@ -20,83 +21,86 @@ export class JobApplicationService {
     private readonly jobListingRepository: Repository<JobListing>,
   ) { }
 
-  async create(createDto: CreateJobApplicationDto): Promise<JobApplication> {
+  async create(createDto: CreateJobApplicationDto): Promise<{ message: string; data?: JobApplication; error?: string }> {
     const { userId, jobListingId } = createDto;
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) return { message: messages.jobApplicationUserNotFound.replace('{userId}', String(userId)), error: messages.jobApplicationUserNotFoundError };
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
+      const jobListing = await this.jobListingRepository.findOne({ where: { id: jobListingId } });
+      if (!jobListing) return { message: messages.jobApplicationJobListingNotFound.replace('{jobListingId}', String(jobListingId)), error: messages.jobApplicationJobListingNotFoundError };
 
-    const jobListing = await this.jobListingRepository.findOne({ where: { id: jobListingId } });
-    if (!jobListing) throw new NotFoundException(`Job listing with ID ${jobListingId} not found`);
-
-    const jobApplication = this.jobApplicationRepository.create(createDto);
-    return this.jobApplicationRepository.save(jobApplication);
+      const jobApplication = this.jobApplicationRepository.create(createDto);
+      const saved = await this.jobApplicationRepository.save(jobApplication);
+      return { message: messages.jobApplicationCreated, data: saved };
+    } catch (error) {
+      return { message: messages.jobApplicationCreateFailed, error: error.message };
+    }
   }
 
-  async findAll(): Promise<JobApplication[]> {
-    return this.jobApplicationRepository.find({
+  async findAll(): Promise<{ message: string; data: JobApplication[] }> {
+    const data = await this.jobApplicationRepository.find({
       relations: ['user', 'jobListing'],
     });
+    return { message: messages.jobApplicationsFetched, data };
   }
 
-  async findOne(id: number): Promise<JobApplication> {
+  async findOne(id: number): Promise<{ message: string; data?: JobApplication; error?: string }> {
     const jobApplication = await this.jobApplicationRepository.findOne({
       where: { id },
       relations: ['user', 'jobListing'],
     });
-
     if (!jobApplication) {
-      throw new NotFoundException(`Job application with ID ${id} not found`);
+      return { message: messages.jobApplicationNotFoundWithId.replace('{id}', String(id)), error: messages.jobApplicationNotFoundError };
     }
-
-    return jobApplication;
+    return { message: messages.jobApplicationFound, data: jobApplication };
   }
 
-  async update(id: number, updateDto: UpdateJobApplicationDto): Promise<JobApplication> {
-    const existing = await this.jobApplicationRepository.findOne({ where: { id } });
-    if (!existing) {
-      throw new NotFoundException(`Job application with ID ${id} not found`);
-    }
-
-    const updatePayload: Partial<JobApplication> = { id };
-
-    if (updateDto.userId !== undefined && updateDto.userId !== 0) {
-      const user = await this.userRepository.findOne({ where: { id: updateDto.userId } });
-      if (!user) {
-        throw new NotFoundException(`User with ID ${updateDto.userId} not found`);
+  async update(id: number, updateDto: UpdateJobApplicationDto): Promise<{ message: string; data?: JobApplication; error?: string }> {
+    try {
+      const existing = await this.jobApplicationRepository.findOne({ where: { id } });
+      if (!existing) {
+        return { message: messages.jobApplicationNotFoundWithId.replace('{id}', String(id)), error: messages.jobApplicationNotFoundError };
       }
-      updatePayload.user = user;
-    }
-
-
-    if (updateDto.jobListingId !== undefined && updateDto.jobListingId !== 0) {
-      const jobListing = await this.jobListingRepository.findOne({ where: { id: updateDto.jobListingId } });
-      if (!jobListing) {
-        throw new NotFoundException(`Job listing with ID ${updateDto.jobListingId} not found`);
+      const updatePayload: Partial<JobApplication> = { id };
+      if (updateDto.userId !== undefined && updateDto.userId !== 0) {
+        const user = await this.userRepository.findOne({ where: { id: updateDto.userId } });
+        if (!user) {
+          return { message: messages.jobApplicationUserNotFound.replace('{userId}', String(updateDto.userId)), error: messages.jobApplicationUserNotFoundError };
+        }
+        updatePayload.user = user;
       }
-      updatePayload.jobListing = jobListing;
+      if (updateDto.jobListingId !== undefined && updateDto.jobListingId !== 0) {
+        const jobListing = await this.jobListingRepository.findOne({ where: { id: updateDto.jobListingId } });
+        if (!jobListing) {
+          return { message: messages.jobApplicationJobListingNotFound.replace('{jobListingId}', String(updateDto.jobListingId)), error: messages.jobApplicationJobListingNotFoundError };
+        }
+        updatePayload.jobListing = jobListing;
+      }
+      if (updateDto.resume !== undefined) {
+        updatePayload.resume = updateDto.resume;
+      }
+      const updated = this.jobApplicationRepository.create({
+        ...existing,
+        ...updatePayload,
+      });
+      const saved = await this.jobApplicationRepository.save(updated);
+      return { message: messages.jobApplicationUpdated, data: saved };
+    } catch (error) {
+      return { message: messages.jobApplicationUpdateFailed, error: error.message };
     }
-
-    if (updateDto.resume !== undefined) {
-      updatePayload.resume = updateDto.resume;
-    }
-
-    const updated = this.jobApplicationRepository.create({
-      ...existing,
-      ...updatePayload,
-    });
-
-    return this.jobApplicationRepository.save(updated);
   }
 
-
-  async remove(id: number): Promise<JobApplication> {
-    const jobApplication = await this.jobApplicationRepository.findOne({ where: { id } });
-    if (!jobApplication) {
-      throw new NotFoundException(`Job application with ID ${id} not found`);
+  async remove(id: number): Promise<{ message: string; data?: JobApplication; error?: string }> {
+    try {
+      const jobApplication = await this.jobApplicationRepository.findOne({ where: { id } });
+      if (!jobApplication) {
+        return { message: messages.jobApplicationNotFoundWithId.replace('{id}', String(id)), error: messages.jobApplicationNotFoundError };
+      }
+      await this.jobApplicationRepository.remove(jobApplication);
+      return { message: messages.jobApplicationDeleted, data: jobApplication };
+    } catch (error) {
+      return { message: messages.jobApplicationDeleteFailed, error: error.message };
     }
-
-    await this.jobApplicationRepository.remove(jobApplication);
-    return jobApplication;
   }
 }

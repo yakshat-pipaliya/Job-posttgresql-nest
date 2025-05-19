@@ -1,22 +1,23 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateJobApplicationStatusDto } from './create-job-application-status.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumber, IsString } from 'class-validator';
+import { IsOptional, IsNumber, IsEnum } from 'class-validator';
+import { JobStatus, jobApplicationStatusExamples, jobApplicationStatusMessages, jobApplicationStatusDescriptions } from '../../common/message';
 
 export class UpdateJobApplicationStatusDto extends PartialType(CreateJobApplicationStatusDto) {
-
-
-    @ApiPropertyOptional({ example: 1, description: 'ID of the user' })
+    @ApiPropertyOptional({ example: jobApplicationStatusExamples.JobApplicationId, description: jobApplicationStatusDescriptions.JobApplicationId })
     @IsOptional()
     @IsNumber()
     JobApplicationId?: number;
 
-
-    @ApiPropertyOptional({ example: 'pending', description: 'Status of the pending', enum: ['interviewing', 'rejected', 'pending'], default: 'pending', nullable: true })
-    @IsString()
+    @ApiPropertyOptional({
+        example: jobApplicationStatusExamples.Status,
+        enum: JobStatus,
+        description: jobApplicationStatusDescriptions.Status,
+    })
     @IsOptional()
-    Status: 'interviewing' | 'rejected' | 'pending';
-
-
+    @IsEnum(JobStatus, {
+        message: jobApplicationStatusMessages.invalidStatus,
+    })
+    Status?: JobStatus;
 }
-

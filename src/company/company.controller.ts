@@ -1,57 +1,45 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Company } from './entities/company.entity';
-import { ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('company')
+@ApiBearerAuth('access-token')
 @Controller('company')
 export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(private readonly companyService: CompanyService) { }
 
   @Post()
-  @ApiResponse({ status: 201, description: 'Company created successfully.' })
-  create(@Body() createCompanyDto: CreateCompanyDto): Promise<Company> {
+  @UseGuards(AuthGuard('jwt'))
+  create(@Body() createCompanyDto: CreateCompanyDto) {
     return this.companyService.create(createCompanyDto);
   }
 
   @Get()
-  @ApiResponse({ status: 200, description: 'List of companies returned.' })
-  findAll(): Promise<Company[]> {
+  findAll() {
     return this.companyService.findAll();
   }
 
   @Get(':id')
-  @ApiResponse({ status: 200, description: 'Company found.' })
-  @ApiResponse({ status: 404, description: 'Company not found.' })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Company> {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.companyService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiResponse({ status: 200, description: 'Company updated successfully.' })
-  @ApiResponse({ status: 404, description: 'Company not found.' })
+  @UseGuards(AuthGuard('jwt'))
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateCompanyDto: UpdateCompanyDto,
-  ): Promise<Company> {
+    @Body() updateCompanyDto: UpdateCompanyDto, @Req() req,
+  ) {
     return this.companyService.update(id, updateCompanyDto);
   }
 
   @Delete(':id')
-  @ApiResponse({ status: 200, description: 'Company deleted successfully.' })
-  @ApiResponse({ status: 404, description: 'Company not found.' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  @UseGuards(AuthGuard('jwt'))
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req) {
     return this.companyService.remove(id);
   }
 }
