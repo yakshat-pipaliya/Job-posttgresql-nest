@@ -22,7 +22,6 @@ export class CompanyController {
   findAll() {
     return this.companyService.findAll();
   }
-
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.companyService.findOne(id);

@@ -33,9 +33,9 @@ export class CompanyService {
     }
   }
 
-  async findAll(): Promise<{ message: string; companies: Company[] }> {
-    const companies = await this.companyRepository.find();
-    return { message: messages.companyListReturned, companies };
+  async findAll(): Promise<{ message: string; company: Company[] }> {
+    const company = await this.companyRepository.find();
+    return { message: 'Companies Found', company }
   }
 
   async findOne(id: number): Promise<{ message: string; company: Company }> {

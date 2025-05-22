@@ -4,7 +4,8 @@ import { Repository } from 'typeorm';
 import { JobApplicationStatus } from './entities/job-application-status.entity';
 import { CreateJobApplicationStatusDto } from './dto/create-job-application-status.dto';
 import { UpdateJobApplicationStatusDto } from './dto/update-job-application-status.dto';
-import { messages, jobApplicationMessages, jobApplicationStatusLogMessages } from '../common/message';
+import { JobApplication } from '../job-application/entities/job-application.entity';
+import { messages, jobApplicationStatusMessages, jobApplicationStatusLogMessages } from '../common/message';
 
 @Injectable()
 export class JobApplicationStatusService {
@@ -16,22 +17,32 @@ export class JobApplicationStatusService {
     private readonly JobApplicationStatusRepository: Repository<JobApplicationStatus>,
   ) { }
 
-  async create(createJobApplicationStatusDto: CreateJobApplicationStatusDto): Promise<{ message: string; jobApplicationStatus: JobApplicationStatus }> {
-    const JobApplicationStatus = this.JobApplicationStatusRepository.create(createJobApplicationStatusDto);
+  async create(createJobApplicationStatusDto: CreateJobApplicationStatusDto): Promise<{ message: string; jobApplicationStatus?: JobApplicationStatus; error?: string; }> {
+    const { JobApplicationId } = createJobApplicationStatusDto;
     try {
-      const savedJobApplicationStatus = await this.JobApplicationStatusRepository.save(JobApplicationStatus);
-      return { message: jobApplicationMessages.created, jobApplicationStatus: savedJobApplicationStatus };
+      const existing = await this.JobApplicationStatusRepository.findOne({ where: { JobApplicationId }, });
+      if (existing) {
+        return {
+          message: `JobApplicationId ${JobApplicationId} has already applied for JobApplicationStatus.`,
+          error: 'DuplicateJobApplicationStatus',
+        };
+      }
+      const jobApplicationStatus = this.JobApplicationStatusRepository.create(createJobApplicationStatusDto);
+      const savedJobApplicationStatus = await this.JobApplicationStatusRepository.save(jobApplicationStatus);
+      return {
+        message: jobApplicationStatusMessages.created,
+        jobApplicationStatus: savedJobApplicationStatus,
+      };
     } catch (error) {
-      this.logger.error(`${jobApplicationStatusLogMessages.creating}`, error);
+      this.logger.error(jobApplicationStatusLogMessages.creating, error);
       throw new BadRequestException(messages.internalServerError);
     }
   }
 
-  async findAll(): Promise<{ message: string; JobApplicationStatus: JobApplicationStatus[] }> {
-    const JobApplicationStatus = await this.JobApplicationStatusRepository.find({
-      relations: ['JobApplication'],
-    });
-    return { message: jobApplicationMessages.listReturned, JobApplicationStatus };
+
+  async findAll(): Promise<{ message: string; jobApplicationStatus: JobApplicationStatus[] }> {
+    const jobApplicationStatus = await this.JobApplicationStatusRepository.find({ relations: ['JobApplication'] });
+    return { message: 'JobApplicationStatus Found', jobApplicationStatus }
   }
 
   async findOne(id: number): Promise<{ JobApplicationStatus: JobApplicationStatus; message: string }> {
@@ -40,9 +51,9 @@ export class JobApplicationStatusService {
       relations: ['JobApplication'],
     });
     if (!JobApplicationStatus) {
-      throw new NotFoundException(jobApplicationMessages.notFound);
+      throw new NotFoundException(jobApplicationStatusMessages.notFound);
     }
-    return { message: jobApplicationMessages.found, JobApplicationStatus };
+    return { message: jobApplicationStatusMessages.found, JobApplicationStatus };
   }
 
   async update(id: number, updateJobApplicationStatusDto: UpdateJobApplicationStatusDto): Promise<{ JobApplicationStatus: JobApplicationStatus; message: string }> {
@@ -51,13 +62,12 @@ export class JobApplicationStatusService {
       ...updateJobApplicationStatusDto,
     });
     if (!JobApplicationStatus) {
-      throw new NotFoundException(jobApplicationMessages.notFound);
+      throw new NotFoundException(jobApplicationStatusMessages.notFound);
     }
     try {
       const updatedJobApplicationStatus = await this.JobApplicationStatusRepository.save(JobApplicationStatus);
-      return { message: jobApplicationMessages.updated, JobApplicationStatus: updatedJobApplicationStatus };
+      return { message: jobApplicationStatusMessages.updated, JobApplicationStatus: updatedJobApplicationStatus };
     } catch (error) {
-      this.logger.error(`${jobApplicationStatusLogMessages.updating}`, error);
       throw new BadRequestException(messages.internalServerError);
     }
   }
@@ -66,9 +76,9 @@ export class JobApplicationStatusService {
     this.logger.log(`${jobApplicationStatusLogMessages.removing} ${id}`);
     const JobApplicationStatus = await this.JobApplicationStatusRepository.findOne({ where: { id } });
     if (!JobApplicationStatus) {
-      throw new NotFoundException(jobApplicationMessages.notFound);
+      throw new NotFoundException(jobApplicationStatusMessages.notFound);
     }
     await this.JobApplicationStatusRepository.remove(JobApplicationStatus);
-    return { message: jobApplicationMessages.deleted , JobApplicationStatus };
+    return { message: jobApplicationStatusMessages.deleted, JobApplicationStatus };
   }
 }

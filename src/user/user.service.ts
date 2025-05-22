@@ -1,39 +1,41 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository, } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { QueryFailedError } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { messages } from '../common/message';
+import { IUser } from './entities/user.interface'
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
   ) { }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<IUser | null> {
     return await this.userRepository.findOne({ where: { Email: email } });
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<{ message: string; user: IUser }> {
     const { Password, ...rest } = createUserDto;
     const hashedPassword = await bcrypt.hash(Password, 10);
-    const user = this.userRepository.create({ ...rest, Password: hashedPassword });
-
+    const createUser = this.userRepository.create({ ...rest, Password: hashedPassword });
     try {
-      return await this.userRepository.save(user);
+      const user = await this.userRepository.save(createUser);
+      return { message: 'User Create Successfully', user };
     } catch (error) {
       if ((error as any).code === '23505') {
         const detail = (error as any).detail as string;
-        if (detail && detail.includes('Email')) {
+        if (detail.includes('Email')) {
           throw new BadRequestException(messages.emailAlreadyExists);
-        } else if (detail && detail.includes('PhoneNo')) {
+        } else if (detail.includes('PhoneNo')) {
           throw new BadRequestException(messages.phoneAlreadyExists);
         }
       }
@@ -41,9 +43,13 @@ export class UserService {
     }
   }
 
-  async login(email: string, password: string): Promise<{ user: User; access_token: string }> {
+  async login(email: string, password: string): Promise<{ user: IUser; access_token: string }> {
     const user = await this.findByEmail(email);
     if (!user) {
+      this.logger.warn(`Login failed: user not found for email ${email}`);
+      this.logger.error(`Login failed: user not found for email ${email}`);
+      this.logger.debug(`Login failed: user not found for email ${email}`);
+      this.logger.verbose(`Login failed: user not found for email ${email}`);
       throw new NotFoundException(messages.userNotFound);
     }
 
@@ -54,44 +60,47 @@ export class UserService {
 
     const payload = { sub: user.id, email: user.Email };
     const access_token = await this.jwtService.signAsync(payload);
-
     return {
       user,
       access_token,
     };
   }
 
-  async findAll(): Promise<User[]> {
-    return await this.userRepository.find();
+  async findAll(): Promise<{ message: string; user: IUser[] }> {
+    const user = await this.userRepository.find();
+    return { message: 'All User Found', user }
   }
 
-  async findOne(id: number): Promise<User> {
+  async findOne(id: number): Promise<{ message: string; user: IUser }> {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {
       throw new NotFoundException(messages.userNotFound);
     }
-    return user;
+    return { message: 'User found', user };
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userRepository.preload({
-      id,
-      ...updateUserDto,
-    });
-
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<{ message: string; user: IUser }> {
+    const user = await this.userRepository.preload({ id, ...updateUserDto });
     if (!user) {
       throw new NotFoundException(messages.userNotFound);
     }
-
-    return this.userRepository.save(user);
+    return { message: 'User Updated Successfully', user };
   }
 
-  async remove(id: number): Promise<User> {
+  async remove(id: number): Promise<{ message: string; user: IUser }> {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {
       throw new NotFoundException(messages.userNotFound);
     }
-    await this.userRepository.delete(id);
-    return user;
+    try {
+      await this.userRepository.delete(id);
+      return { message: 'User Delete Successfully', user };
+    } catch (error) {
+      if ((error as any).code === '23503') {
+        throw new BadRequestException('User is using with other records, such as job applications.');
+      }
+      throw new BadRequestException(messages.badRequest);
+    }
   }
+
 }

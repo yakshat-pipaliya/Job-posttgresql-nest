@@ -19,11 +19,9 @@ export class JobListingService {
     return { message: messages.jobListingCreated, jobListing: savedJobListing };
   }
 
-  async findAll(): Promise<{ message: string; jobListings: JobListing[] }> {
-    const jobListings = await this.jobListingRepository.find({
-      relations: ['company'],
-    });
-    return { message: messages.jobListingListReturned, jobListings };
+  async findAll(): Promise<{ message: string; jobListing: JobListing[] }> {
+    const jobListing = await this.jobListingRepository.find({ relations: ['company'] });
+    return { message: 'Job-Listing Found', jobListing }
   }
 
   async findOne(id: number): Promise<{ message: string; jobListing: JobListing }> {

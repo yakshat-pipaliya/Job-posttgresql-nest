@@ -24,6 +24,14 @@ export class JobApplicationService {
   async create(createDto: CreateJobApplicationDto): Promise<{ message: string; data?: JobApplication; error?: string }> {
     const { userId, jobListingId } = createDto;
     try {
+      const existing = await this.jobApplicationRepository.findOne({ where: { userId, jobListingId } });
+      if (existing) {
+        return {
+          message: `User with ID ${userId} has already applied for job listing ID ${jobListingId}.`,
+          error: 'DuplicateJobApplication',
+        };
+      }
+
       const user = await this.userRepository.findOne({ where: { id: userId } });
       if (!user) return { message: messages.jobApplicationUserNotFound.replace('{userId}', String(userId)), error: messages.jobApplicationUserNotFoundError };
 
@@ -38,11 +46,9 @@ export class JobApplicationService {
     }
   }
 
-  async findAll(): Promise<{ message: string; data: JobApplication[] }> {
-    const data = await this.jobApplicationRepository.find({
-      relations: ['user', 'jobListing'],
-    });
-    return { message: messages.jobApplicationsFetched, data };
+  async findAll(): Promise<{ message: string; jobApplication: JobApplication[] }> {
+    const jobApplication = await this.jobApplicationRepository.find({ relations: ['user', 'jobListing'] });
+    return { message: 'JobApplications Found', jobApplication }
   }
 
   async findOne(id: number): Promise<{ message: string; data?: JobApplication; error?: string }> {
@@ -61,6 +67,17 @@ export class JobApplicationService {
       const existing = await this.jobApplicationRepository.findOne({ where: { id } });
       if (!existing) {
         return { message: messages.jobApplicationNotFoundWithId.replace('{id}', String(id)), error: messages.jobApplicationNotFoundError };
+      }
+      const userIdToCheck = updateDto.userId !== undefined ? updateDto.userId : existing.userId;
+      const jobListingIdToCheck = updateDto.jobListingId !== undefined ? updateDto.jobListingId : existing.jobListingId;
+      const duplicate = await this.jobApplicationRepository.findOne({
+        where: { userId: userIdToCheck, jobListingId: jobListingIdToCheck },
+      });
+      if (duplicate && duplicate.id !== id) {
+        return {
+          message: `User with ID ${userIdToCheck} has already applied for job listing ID ${jobListingIdToCheck}.`,
+          error: 'DuplicateJobApplication',
+        };
       }
       const updatePayload: Partial<JobApplication> = { id };
       if (updateDto.userId !== undefined && updateDto.userId !== 0) {

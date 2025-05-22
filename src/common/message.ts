@@ -191,6 +191,12 @@ export const jobApplicationStatusExamples = {
 export const jobApplicationStatusMessages = {
   statusRequired: 'Status is required.',
   invalidStatus: `JobStatus must be one of the following values: interviewing, rejected, pending`,
+  created: 'Job application Status created successfully.',
+  updated: 'Job application Status updated successfully.',
+  deleted: 'Job application Status deleted successfully.',
+  notFound: 'Job application Status not found.',
+  found: 'Job application Status found.',
+  listReturned: 'List of job applications Status returned.',
 };
 
 export const jobApplicationStatusDescriptions = {
